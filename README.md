@@ -8,7 +8,9 @@ torchvision 0.2.1
 numpy 1.41.3
 
 ## Examples
+
 --model: ResNet50, ResNet101, ResNeXt101_32x4d
+
 --augment: None, mixup, cutmix, autoaug
 
 ### Standard 
