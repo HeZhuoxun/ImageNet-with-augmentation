@@ -30,7 +30,7 @@ parser.add_argument('--model', default="ResNet50", type=str,
 parser.add_argument('--name', default='0', type=str, help='name of run')
 parser.add_argument('--seed', default=0, type=int, help='random seed')
 parser.add_argument('--batch_size', default=256, type=int, help='batch size')
-parser.add_argument('--epoch', default=200, type=int,
+parser.add_argument('--epoch', default=90, type=int,
                     help='total epochs to run')
 parser.add_argument('--decay', default=1e-4, type=float, help='weight decay')
 parser.add_argument('--augment', default='None', type=str,
@@ -83,10 +83,10 @@ transform_test = transforms.Compose([
 traindir = os.path.join(args.data_dir, 'train')
 testdir = os.path.join(args.data_dir, 'val')
 
-# trainset = datasets.ImageFolder(root=traindir, transform=transform_train)
+trainset = datasets.ImageFolder(root=traindir, transform=transform_train)
 testset = datasets.ImageFolder(root=testdir, transform=transform_test)
 
-trainloader = torch.utils.data.DataLoader(testset,
+trainloader = torch.utils.data.DataLoader(trainset,
                                           batch_size=args.batch_size,
                                           shuffle=True, num_workers=8, pin_memory=True)
 testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size,
