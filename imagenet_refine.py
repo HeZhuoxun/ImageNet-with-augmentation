@@ -53,9 +53,9 @@ print('==> Preparing data..')
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-assert args.augment in ['standard', 'clean'], 'wrong augmentation method'
+assert args.refine_aug in ['standard', 'clean'], 'wrong augmentation method'
 
-if args.augment == 'standard':
+if args.refine_aug == 'standard':
     transform_train = transforms.Compose([
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
