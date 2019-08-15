@@ -198,13 +198,24 @@ def train(epoch):
         #                 + predicted.eq(targets_b.data).float().cpu().sum())
         #
         # else:
-        outputs = net(inputs)
+        p = 0.5*(math.cos(math.pi / (30*len(trainloader)) * ((epoch - start_epoch)*len(trainloader)+batch_idx)) + 1)
+        if (epoch - start_epoch) < 30 and random.random() < p:
+            inputs, targets_a, targets_b, lam = mixup(inputs, targets_a, args.alpha)
+            outputs = net(inputs)
+            loss = mixup_criterion(criterion_none, outputs, targets_a, targets_b, lam)
+            train_loss += loss.data
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets_a.size(0)
+            correct += (predicted.eq(targets_a.data).float().cpu().sum()
+                        + predicted.eq(targets_b.data).float().cpu().sum())
 
-        loss = criterion(outputs, targets_a)
-        train_loss += loss.data
-        _, predicted = torch.max(outputs.data, 1)
-        total += targets_a.size(0)
-        correct += predicted.eq(targets_a.data).cpu().sum().float()
+        else:
+            outputs = net(inputs)
+            loss = criterion(outputs, targets_a)
+            train_loss += loss.data
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets_a.size(0)
+            correct += predicted.eq(targets_a.data).cpu().sum().float()
 
         optimizer.zero_grad()
         loss.backward()
