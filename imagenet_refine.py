@@ -159,6 +159,26 @@ def cutmix(x, y, alpha):
     return x, y, y[index], lam
 
 
+def cutout(x):
+    _, _, width, height = x.size()
+    lam = np.random.uniform(0, 1)
+
+    c_x = np.random.randint(width)
+    c_y = np.random.randint(height)
+    c_w = int(width * math.sqrt(1 - lam))
+    c_h = int(height * math.sqrt(1 - lam))
+
+    x1 = np.clip(c_x - c_w // 2, 0, width)
+    x2 = np.clip(c_x + c_w // 2, 0, width)
+    y1 = np.clip(c_y - c_h // 2, 0, height)
+    y2 = np.clip(c_y + c_h // 2, 0, height)
+
+    x[:, 0, x1:x2, y1:y2] = -0.485/0.229
+    x[:, 1, x1:x2, y1:y2] = -0.456/0.224
+    x[:, 2, x1:x2, y1:y2] = -0.406/0.225
+    return x
+
+
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return (lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)).mean()  # lam.size() == batch_size
     # return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
@@ -300,7 +320,7 @@ def adjust_learning_rate(optimizer, epoch):
     lr = args.lr
     epoch = epoch - start_epoch
     if epoch >= 25:
-        epoch /= 10
+        lr /= 10
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
