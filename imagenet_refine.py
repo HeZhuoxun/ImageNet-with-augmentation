@@ -42,6 +42,8 @@ parser.add_argument('--no-cpu', dest='cpu', action='store_false',
                     help='dataloader with cpu(default: True)')
 parser.add_argument('--procut', default=0., type=float,
                     help='the probability of cutmix when fine-tuning')
+parser.add_argument('--augment', default='None', type=str,
+                    help='augmentation methods: None, mixup, cutmix, autoaug')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -58,7 +60,8 @@ print('==> Preparing data..')
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-assert args.refine_aug in ['standard', 'clean'], 'wrong augmentation method'
+assert args.augment in ['None', 'mixup', 'cutmix', 'autoaug'], 'wrong augmentation method'
+assert args.refine_aug in ['standard', 'clean'], 'wrong augmentation method when fine-tuning'
 
 if args.refine_aug == 'standard':
     trainloader, train_iter, testloader, test_iter = dataloader(args.batch_size, args.data_dir, augment=True, cpu=args.cpu)
