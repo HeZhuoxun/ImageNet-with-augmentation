@@ -40,6 +40,8 @@ parser.add_argument('--data_dir', default='/DATA4_DB3/data/kydu/data/', type=str
                     help='file path of ImageNet')
 parser.add_argument('--no-cpu', dest='cpu', action='store_false',
                     help='dataloader with cpu(default: True)')
+parser.add_argument('--procut', default=0., type=float,
+                    help='the probability of cutmix when fine-tuning')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -196,39 +198,35 @@ def train(epoch):
     # for batch_idx, (inputs, targets_a) in enumerate(trainloader):
     #     if use_cuda:
     #         inputs, targets_a = inputs.cuda(), targets_a.cuda()
-
-        # if args.augment == 'mixup':
-        #     inputs, targets_a, targets_b, lam = mixup(inputs, targets_a, args.alpha)
-        #     outputs = net(inputs)
-        #     loss = mixup_criterion(criterion_none, outputs, targets_a, targets_b, lam)
-        #     train_loss += loss.data
-        #     _, predicted = torch.max(outputs.data, 1)
-        #     total += targets_a.size(0)
-        #     correct += (predicted.eq(targets_a.data).float().cpu().sum()
-        #                 + predicted.eq(targets_b.data).float().cpu().sum())
-        #
-        # elif args.augment == 'cutmix':
-        #     inputs, targets_a, targets_b, lam = cutmix(inputs, targets_a, 1)
-        #     outputs = net(inputs)
-        #     loss = lam*criterion(outputs, targets_a) + (1-lam)*criterion(outputs, targets_b)
-        #     train_loss += loss.data
-        #     _, predicted = torch.max(outputs.data, 1)
-        #     total += targets_a.size(0)
-        #     correct += (predicted.eq(targets_a.data).float().cpu().sum()
-        #                 + predicted.eq(targets_b.data).float().cpu().sum())
-        #
-        # else:
-        p = 0.5*(math.cos(math.pi / (30*len(trainloader)) * ((epoch - start_epoch)*len(trainloader)+batch_idx)) + 1)
-        if (epoch - start_epoch) < 30 and random.random() < p:
-            inputs, targets_a, targets_b, lam = mixup(inputs, targets_a, args.alpha)
+        if args.augment == 'mixup':
+            p = 0.5*(math.cos(math.pi / (30*len(trainloader)) * ((epoch - start_epoch)*len(trainloader)+batch_idx)) + 1)
+            if (epoch - start_epoch) < 30 and random.random() < p:
+                inputs, targets_a, targets_b, lam = mixup(inputs, targets_a, args.alpha)
+            else:
+                targets_b = targets_a
+                lam = torch.cuda.FloatTensor([1.]).expand(targets_a.size(0))
             outputs = net(inputs)
             loss = mixup_criterion(criterion_none, outputs, targets_a, targets_b, lam)
             train_loss += loss.data
             _, predicted = torch.max(outputs.data, 1)
             total += targets_a.size(0)
-            correct += (predicted.eq(targets_a.data).float().cpu().sum()
-                        + predicted.eq(targets_b.data).float().cpu().sum())
-
+            correct_a = predicted.eq(targets_a.data) + predicted.eq(targets_b.data)
+            correct_a[correct_a == 2] = 1
+            correct += correct_a.float().cpu().sum()
+        elif args.augment == 'cutmix':
+            if random.random() < args.procut:  # probability to cutmix
+                inputs, targets_a, targets_b, lam = cutmix(inputs, targets_a, 1)
+            else:
+                targets_b = targets_a
+                lam = 1.
+            outputs = net(inputs)
+            loss = lam * criterion(outputs, targets_a) + (1 - lam) * criterion(outputs, targets_b)
+            train_loss += loss.data
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets_a.size(0)
+            correct_a = predicted.eq(targets_a.data) + predicted.eq(targets_b.data)
+            correct_a[correct_a == 2] = 1
+            correct += correct_a.float().cpu().sum()
         else:
             outputs = net(inputs)
             loss = criterion(outputs, targets_a)
